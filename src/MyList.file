@@ -1,0 +1,5 @@
+1) Try to do separate entity for Locations and Tags
+As a Plus:
+- Use docker
+- Use multithreaded
+- Upload results into Google Sheet (through google api by application)
