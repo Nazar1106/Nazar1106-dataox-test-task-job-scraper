@@ -1,0 +1,37 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: job-scraper-mysql
+    restart: always
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_DATABASE: job_scraper_db
+      MYSQL_USER: mate
+      MYSQL_PASSWORD: 12345
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD-SHELL", "mysqladmin ping -hmysql -uroot -proot" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    container_name: job-scraper-app
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8081:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/job_scraper_db
+      SPRING_DATASOURCE_USERNAME: mate
+      SPRING_DATASOURCE_PASSWORD: 12345
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MySQL8Dialect
+
+volumes:
+  mysql_data:

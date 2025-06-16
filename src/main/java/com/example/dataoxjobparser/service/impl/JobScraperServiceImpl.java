@@ -1,5 +1,6 @@
 package com.example.dataoxjobparser.service.impl;
 
+import com.example.dataoxjobparser.dto.JobSearchParametersDto;
 import com.example.dataoxjobparser.entity.JobPosting;
 import com.example.dataoxjobparser.render.HtmlRenderer;
 import com.example.dataoxjobparser.repository.JobPostingRepository;
@@ -14,6 +15,8 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -138,4 +141,43 @@ public class JobScraperServiceImpl implements JobScraperService {
         }
         return allJobs;
     }
+
+    public List<JobPosting> filterAndSort(JobSearchParametersDto params) {
+        Specification<JobPosting> spec = Specification.where(null);
+
+        if (params.locations() != null && !params.locations().isEmpty()) {
+            Specification<JobPosting> locationSpec = Specification.where(null);
+            for (String loc : params.locations()) {
+                locationSpec = Specification.where(locationSpec).or(
+                        (root, query, cb) -> cb.like(cb.lower(root.join("location")), "%" + loc.toLowerCase() + "%")
+                );
+            }
+            spec = spec.and(locationSpec);
+        }
+
+        if (params.startDate() != null && params.endDate() != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.between(root.get("postedDate"), params.startDate(), params.endDate()));
+        } else if (params.startDate() != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.greaterThanOrEqualTo(root.get("postedDate"), params.startDate()));
+        } else if (params.endDate() != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.lessThanOrEqualTo(root.get("postedDate"), params.endDate()));
+        }
+
+        String sortBy = (params.sortBy() != null) ? params.sortBy() : "postedDate";
+        String direction = (params.sortDirection() != null) ? params.sortDirection().toUpperCase() : "DESC";
+
+        Sort.Direction sortDirection;
+        try {
+            sortDirection = Sort.Direction.fromString(direction);
+        } catch (IllegalArgumentException e) {
+            sortDirection = Sort.Direction.DESC;
+        }
+
+        Sort sort = Sort.by(sortDirection, sortBy);
+        return repository.findAll(spec, sort);
+    }
+
 }

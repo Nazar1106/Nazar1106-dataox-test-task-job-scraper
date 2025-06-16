@@ -1,5 +1,6 @@
 package com.example.dataoxjobparser.controller;
 
+import com.example.dataoxjobparser.dto.JobSearchParametersDto;
 import com.example.dataoxjobparser.entity.JobPosting;
 import com.example.dataoxjobparser.service.JobScraperService;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,11 +19,13 @@ public class ScraperController {
         this.scraperService = scraperService;
     }
 
-    //todo:Additionally, I would like the application to have an option to filter or sort
-    // the results based on different criteria, such as job location or posting date.
-
     @GetMapping("/jobs")
     public List<JobPosting> getJobsByFunction(@RequestParam String function) {
         return scraperService.scrapeJobsByFunction(function);
+    }
+
+    @GetMapping("/filtered")
+    public List<JobPosting> filterAndSortJobs(JobSearchParametersDto params) {
+        return scraperService.filterAndSort(params);
     }
 }
